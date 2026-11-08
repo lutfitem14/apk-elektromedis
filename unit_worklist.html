@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Worklist Monitor - Kepala Unit</title>
+    <style>
+        :root {
+            --primary: #0f766e; /* Teal profesional untuk medis/unit */
+            --primary-hover: #115e59;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #cbd5e1;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        header h2 { margin: 0 0 5px 0; color: var(--primary); }
+        header p { margin: 0; color: #64748b; font-size: 14px; }
+        
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .toolbar-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .form-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+            margin-bottom: 25px;
+            border-top: 4px solid var(--primary);
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+            gap: 12px;
+        }
+        @media(max-width: 900px) {
+            .form-grid { grid-template-columns: 1fr; }
+        }
+        input, select, button {
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: var(--primary-hover); }
+        
+        .table-responsive {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th {
+            background-color: #f1f5f9;
+            color: #334155;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        tr:hover { background-color: #f8fafc; }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-normal { background: #e2e8f0; color: #475569; }
+        .badge-penting { background: #fef3c7; color: #d97706; }
+        .badge-darurat { background: #fee2e2; color: #dc2626; }
+
+        .badge-status {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 12px;
+            border: 1px solid transparent;
+        }
+        .status-todo { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+        .status-progress { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+        .status-done { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+
+        select.status-select {
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-sm {
+            padding: 6px 10px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+        .btn-danger { background-color: var(--danger); }
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-secondary { background-color: #64748b; }
+        .btn-secondary:hover { background-color: #475569; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #94a3b8;
+        }
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--primary);
+        }
+        .stat-card h4 { margin: 0 0 5px 0; font-size: 13px; color: #64748b; }
+        .stat-card .value { font-size: 20px; font-weight: 700; color: var(--text); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h2>🏥 Worklist Elektromedis </h2>
+        <p>Sistem Koordinasi Tugas Elektromedis </p>
+    </header>
+
+    <!-- Ringkasan Statistik -->
+    <div class="stats-bar">
+        <div class="stat-card" style="border-left-color: #64748b;">
+            <h4>Total Perintah Tugas</h4>
+            <div class="value" id="count-total">0</div>
+        </div>
+        <div class="stat-card" style="border-left-color: #f59e0b;">
+            <h4>Belum Dimulai / Proses</h4>
+            <div class="value" id="count-active">0</div>
+        </div>
+        <div class="stat-card" style="border-left-color: #10b981;">
+            <h4>Tugas Selesai</h4>
+            <div class="value" id="count-done">0</div>
+        </div>
+    </div>
+
+    <!-- Form Tambah Perintah Tugas (Kepala Unit) -->
+    <div class="form-card">
+        <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 16px; color: var(--primary);">📝 Buat Perintah Tugas Baru</h3>
+        <div class="form-grid">
+            <input type="text" id="taskTitle" placeholder="Isi Perintah Tugas / Instruksi Unit...">
+            <input type="date" id="taskDate">
+            <select id="taskPriority">
+                <option value="BIASA">Prioritas: Normal</option>
+               <option value="CITO">Prioritas: Darurat</option>
+            </select>
+            <select id="taskAssignee">
+               
+                <option value="Unit Teknis / Aset">Unit Teknis / Aset</option>
+                           </select>
+            <button onclick="addTask()">Kirim Perintah</button>
+        </div>
+    </div>
+
+    <!-- Toolbar Pencarian & Filter -->
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <input type="text" id="searchInput" placeholder="Cari perintah atau kondisi..." oninput="renderTasks()" style="width: 250px;">
+            <select id="filterStatus" onchange="renderTasks()">
+                <option value="ALL">Semua Kondisi</option>
+                <option value="todo">Belum Dimulai</option>
+                <option value="progress">Sedang Dikerjakan</option>
+                <option value="done">Selesai</option>
+            </select>
+        </div>
+        <div class="toolbar-group">
+            <button class="btn-secondary btn-sm" onclick="exportData()">📥 Ekspor Data (JSON)</button>
+            <button class="btn-danger btn-sm" onclick="resetData()">Reset Data</button>
+        </div>
+    </div>
+
+    <!-- Tabel Papan Kerja Kepala Unit -->
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 5%;">No</th>
+                    <th style="width: 35%;">Perintah (Instruksi Tugas)</th>
+                    <th style="width: 15%;">Ditujukan</th>
+                    <th style="width: 15%;">Deadline & Prioritas</th>
+                    <th style="width: 20%;">Kondisi (Status Pekerjaan)</th>
+                    <th style="width: 10%; text-align: center;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="taskTableBody">
+                <!-- Data akan dimuat melalui JavaScript -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Data Default awal jika kosong
+    let tasks = JSON.parse(localStorage.getItem('unit_worklist_tasks')) || [
+        {
+            id: 1,
+            title: 'Kalibrasi dan pengecekan berkala alat medis unit darurat',
+            assignee: 'Unit Teknis / Aset',
+            date: '2026-11-15',
+            priority: 'Darurat',
+            status: 'progress'
+        },
+        {
+            id: 2,
+            title: 'Audit kelengkapan dokumen akreditasi fasilitas unit',
+            assignee: 'Unit Administrasi',
+            date: '2026-11-20',
+            priority: 'Penting',
+            status: 'todo'
+        }
+    ];
+
+    function saveAndRender() {
+        localStorage.setItem('unit_worklist_tasks', JSON.stringify(tasks));
+        renderTasks();
+    }
+
+    function addTask() {
+        const titleInput = document.getElementById('taskTitle');
+        const dateInput = document.getElementById('taskDate');
+        const priorityInput = document.getElementById('taskPriority');
+        const assigneeInput = document.getElementById('taskAssignee');
+
+        if (!titleInput.value.trim()) {
+            alert('Kolom perintah tugas tidak boleh kosong!');
+            return;
+        }
+
+        const newTask = {
+            id: Date.now(),
+            title: titleInput.value.trim(),
+            date: dateInput.value || 'Tanpa Batas Waktu',
+            priority: priorityInput.value,
+            assignee: assigneeInput.value,
+            status: 'todo' // Default kondisi awal
+        };
+
+        tasks.unshift(newTask);
+        titleInput.value = '';
+        dateInput.value = '';
+        saveAndRender();
+    }
+
+    // Kepala unit mengisi/mengubah KONDISI (status) langsung dari dropdown baris tabel
+    function updateCondition(id, newStatus) {
+        tasks = tasks.map(task => {
+            if (task.id === id) {
+                task.status = newStatus;
+            }
+            return task;
+        });
+        saveAndRender();
+    }
+
+    function deleteTask(id) {
+        if (confirm('Apakah Anda yakin ingin menghapus perintah tugas ini?')) {
+            tasks = tasks.filter(task => task.id !== id);
+            saveAndRender();
+        }
+    }
+
+    function resetData() {
+        if (confirm('Reset seluruh data ke pengaturan awal?')) {
+            localStorage.removeItem('unit_worklist_tasks');
+            location.reload();
+        }
+    }
+
+    function exportData() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "worklist_unit_" + new Date().toISOString().slice(0,10) + ".json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    function renderTasks() {
+        const tbody = document.getElementById('taskTableBody');
+        const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+        const filterStatus = document.getElementById('filterStatus').value;
+
+        tbody.innerHTML = '';
+
+        let filteredTasks = tasks.filter(task => {
+            const matchesSearch = task.title.toLowerCase().includes(searchQuery) || task.assignee.toLowerCase().includes(searchQuery);
+            const matchesFilter = (filterStatus === 'ALL' || task.status === filterStatus);
+            return matchesSearch && matchesFilter;
+        });
+
+        // Hitung statistik
+        let totalCount = tasks.length;
+        let doneCount = tasks.filter(t => t.status === 'done').length;
+        let activeCount = totalCount - doneCount;
+
+        document.getElementById('count-total').innerText = totalCount;
+        document.getElementById('count-active').innerText = activeCount;
+        document.getElementById('count-done').innerText = doneCount;
+
+        if (filteredTasks.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="empty-state">Tidak ada data perintah atau kondisi yang cocok.</td></tr>`;
+            return;
+        }
+
+        filteredTasks.forEach((task, index) => {
+            let priorityBadgeClass = 'badge-normal';
+            if (task.priority === 'Darurat') priorityBadgeClass = 'badge-darurat';
+            else if (task.priority === 'Penting') priorityBadgeClass = 'badge-penting';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>
+                    <div style="font-weight: 600; margin-bottom: 2px;">${task.title}</div>
+                    <div style="font-size: 11px; color: #64748b;">ID: #${task.id.toString().slice(-5)}</div>
+                </td>
+                <td><span style="font-weight: 500; color: #334155;">${task.assignee}</span></td>
+                <td>
+                    <div style="font-size: 13px; margin-bottom: 3px;">📅 ${task.date}</div>
+                    <span class="badge ${priorityBadgeClass}">${task.priority}</span>
+                </td>
+                <td>
+                    <!-- KEPALA UNIT MENGISI/MENGUBAH KONDISI DI SINI -->
+                    <select class="status-select status-${task.status}" onchange="updateCondition(${task.id}, this.value)">
+                        <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>📝 Belum Dimulai</option>
+                        <option value="progress" ${task.status === 'progress' ? 'selected' : ''}>⏳ Sedang Dikerjakan</option>
+                        <option value="done" ${task.status === 'done' ? 'selected' : ''}>✅ Selesai</option>
+                    </select>
+                </td>
+                <td style="text-align: center;">
+                    <button class="btn-danger btn-sm" onclick="deleteTask(${task.id})">Hapus</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Inisialisasi awal saat halaman dimuat
+    renderTasks();
+</script>
+
+</body>
+</html>
